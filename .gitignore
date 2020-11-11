@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#DS STORE
+.DS_Store
+
+# API CREDS
+scripts/CREDS.py
+
+# Data Files
+data/*.tsv
