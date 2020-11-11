@@ -1,5 +1,5 @@
 '''
-This is how I start 99% of my python scripts
+Script to query Twitter API
 '''
 import argparse
 import logging
