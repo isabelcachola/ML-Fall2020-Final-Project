@@ -42,7 +42,7 @@ if __name__=="__main__":
     parser.add_argument('--datadir', '-d', dest='datadir', type=str, help='Directory to store data', default="../data")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, filemode='a', format='%(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
     start = time.time()
 

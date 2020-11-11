@@ -17,3 +17,7 @@ $ python access_twitter_api.py [N] # Number of tweets to collect \
 ```
 
 The script will save the data to the following path format: `{datadir}/{query}_{%d-%m-%Y_%H:%M:%S}.tsv`
+
+After collecting data, update the `data/all_tweet_ids.txt` file. This file keeps track of the unqiue tweet ids we have downloaded.
+
+To update, run `python update_unique_tweet_ids.py`.
