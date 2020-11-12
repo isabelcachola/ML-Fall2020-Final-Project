@@ -11,20 +11,41 @@ import pprint
 import tqdm
 import json
 import csv
+import requests
 from datetime import datetime
 from CREDS import *
 
-class MyStreamListener(tweepy.StreamListener):
 
-    def on_status(self, status):
-        print(status.text)
+def getTweetDetailsWithId(ids):
+    headers = {"Authorization": "Bearer {}".format(BEARER_TOKEN)}
+    inputs = {'ids': ",".join(ids), 'tweet.fields': 'author_id,public_metrics,entities',
+              'expansions': 'entities.mentions.username'}
+    response = requests.get("https://api.twitter.com/2/tweets", headers=headers,
+                            params=inputs)
+    if response.status_code != 200:
+        raise Exception(
+            "Cannot get stream (HTTP {}): {}".format(
+                response.status_code, response.text
+            )
+        )
 
-def stream(api, N, query, datadir):
+    data_root = response.json()
+    data_list = data_root['data']
+    return data_list
+
+def stream(api, N, query, datadir, num_requests=1):
     tweets = []
-    for tweet in tqdm.tqdm(tweepy.Cursor(api.search, q=query, count=100, lang='en', since='2017-06-20').items()):
-        # Skip quote retweets and reply tweets
-        if not tweet.is_quote_status and not tweet.in_reply_to_status_id:
-            tweets.append(tweet._json)
+    for tweet in tqdm.tqdm(tweepy.Cursor(api.search, q=query, count=100, lang='en', since='2016-06-20').items()):
+        if not tweet.is_quote_status and not tweet.in_reply_to_status_id and not tweet.text.startswith('RT'):
+            j = {}
+            # Unpack nested dictionaries
+            for key, value in tweet._json.items():
+                if type(value)==dict:
+                    for sub_key, sub_value in value.items():
+                        j[f'{key}-{sub_key}'] = sub_value
+                else:
+                    j[key] = value
+            tweets.append(j)
         if len(tweets) >= N:
             break
         time.sleep(2)
@@ -32,6 +53,10 @@ def stream(api, N, query, datadir):
     # dd-mm-YY_H:M:S
     dt_string = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     df = pd.DataFrame.from_records(tweets)
+    root_dicts = getTweetDetailsWithId(list(df['id'].astype(str)))
+    df['reply_count'] = [r['public_metrics']['reply_count'] for r in root_dicts]
+    df['quote_count'] = [r['public_metrics']['quote_count'] for r in root_dicts]
+
     save_path = os.path.join(datadir, f'{query}_{dt_string}.tsv')
     df.to_csv(save_path, sep='\t', quoting=csv.QUOTE_NONNUMERIC, index=False)
 
