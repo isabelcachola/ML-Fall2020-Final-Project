@@ -20,4 +20,6 @@ The script will save the data to the following path format: `{datadir}/{query}_{
 
 After collecting data, update the `data/all_tweet_ids.txt` file. This file keeps track of the unqiue tweet ids we have downloaded.
 
-To update, run `python update_unique_tweet_ids.py`.
+To update, run `python update_unique_tweet_ids.py`. Make sure to push these changes and update the Google Drive with your data files.
+
+To preprocess the data for training and evaluation, run `python preprocess_tweets.py`
