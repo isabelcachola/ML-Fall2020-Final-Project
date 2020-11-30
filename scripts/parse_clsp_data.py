@@ -1,5 +1,8 @@
 '''
 Script to query Twitter API
+
+Parses Mark's data directory and update tweet information
+
 May need to run:
     $ export PYTHONIOENCODING=utf8
 '''
@@ -7,7 +10,6 @@ import argparse
 import logging
 import time
 import os
-# import tweepy 
 import pandas as pd
 import pprint
 import tqdm
@@ -110,10 +112,6 @@ if __name__=="__main__":
     logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
     start = time.time()
-
-    # auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-    # auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
-    # api = tweepy.API(auth, wait_on_rate_limit=True)
 
     stream(args.datadir, args.outdir, num_cores=args.num_cores)
 

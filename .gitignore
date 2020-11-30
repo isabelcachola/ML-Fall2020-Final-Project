@@ -135,4 +135,4 @@ dmypy.json
 scripts/CREDS.py
 
 # Data Files
-data/*.tsv
+data/*
