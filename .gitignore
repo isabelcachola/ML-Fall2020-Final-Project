@@ -134,5 +134,9 @@ dmypy.json
 # API CREDS
 scripts/CREDS.py
 
+# VS CODE
+.vscode/
+
+
 # Data Files
 data/*
