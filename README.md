@@ -70,15 +70,3 @@ $ python main.py predict {logreg|bi-lstm|simple-ff} {optional parameters}
 The script saves predictions to `preds/` and testing metrics to `scores/`
 
 
-# TODOs 
-[ ] Try transformer based models (e.g. BERT, I recommend using HuggingFace)
-
-[ ] Train logreg and simple-ff with TF-IDF scores for hashtags
-
-[ ] Interpretability analysis
-
-[ ] Write script to balance dataset. **MAKE SURE IT'S DETERMINISTIC/REPLICATABLE.**
-
-[ ] Re run all experiments on balanced dataset
-
-[ ] Hyper-parameter tuning on all models
