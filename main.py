@@ -23,7 +23,6 @@ def get_args():
     # File locations 
     p.add_argument("--data-dir", type=str, default="data")
     p.add_argument("--log-file", type=str, default="logs.csv")
-    # p.add_argument("--predictions-file", type=str, default="ff-preds.txt")
     p.add_argument('--cachedir', type=str, default="data")
     p.add_argument('--balanced', default=False, action='store_true', help='Flag to use balanced data')
     p.add_argument('--override-cache', default=False, action='store_true')
@@ -31,9 +30,9 @@ def get_args():
 
     # hyperparameters
     p.add_argument("--batch-size", type=int, default=36)
-    p.add_argument("--learning-rate", type=float, default=0.001)
 
     # simple-ff hparams
+    p.add_argument("--learning-rate", type=float, default=0.001)
     p.add_argument("--train-steps", type=int, default=500)
     p.add_argument("--ff-hunits", type=int, default=128)
 

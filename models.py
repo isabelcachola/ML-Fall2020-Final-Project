@@ -61,7 +61,6 @@ class LogisticRegression:
         self.model.fit(X_train, y_train)
         
         y_hat = self.model.predict_proba(X_dev)
-        # import ipdb; ipdb.set_trace()
         print('Validation Loss:', log_loss(y_dev, y_hat))
         print('Validation Accuracy', (y_hat.argmax(axis = 1) == y_dev).mean())
         print('Validation F1 Score:', f1_score(y_dev, y_hat.argmax(axis = 1), average='weighted'))

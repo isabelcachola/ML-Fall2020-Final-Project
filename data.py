@@ -13,8 +13,6 @@ import numpy as np
 from tqdm import tqdm
 import pickle
 
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 class Data:
     def __init__(self, raw_data, text_only=False):
         self.bert = BertModel.from_pretrained('bert-base-uncased', output_hidden_states = True).eval()
@@ -65,7 +63,6 @@ class Data:
             X1 = pd.DataFrame(X1, columns=x1_cols)
 
             logging.info('Getting bert embeddings...')
-            # X2 = pd.DataFrame([self._get_bert_embed(tweet) for tweet in tqdm(df['processed_text'].values)])
             X2 = pd.DataFrame([self._get_bert_embed(tweet) for tweet in tqdm(df['text'].values)])
             X2.columns = [f'b{i}' for i in range(X2.shape[1])]
 
@@ -88,37 +85,10 @@ def read_pickle(path):
         data = pickle.load(f)
     return data
 
-# # Doesn't load other features, only the text
-# def load_text_only(datadir):
-#     all_data = pd.read_csv(os.path.join(datadir, 'all_data_preprocessed.tsv'), sep='\t')
-#     all_data = all_data[['text', 'label']]
 
-#     # Read splits
-#     train_ids = pd.read_csv(os.path.join(datadir, 'train_ids.txt'), names=['id'])
-#     dev_ids = pd.read_csv(os.path.join(datadir, 'dev_ids.txt'), names=['id'])
-#     test_ids = pd.read_csv(os.path.join(datadir, 'test_ids.txt'), names=['id'])
-
-#     assert (len(train_ids) + len(dev_ids) + len(test_ids)) == len(all_data)
-    
-#     train = train_ids.merge(all_data, how='inner', on='id')
-#     dev = dev_ids.merge(all_data, how='inner', on='id')
-#     test = test_ids.merge(all_data, how='inner', on='id').values
-
-#     return train, dev, test
-
-def get_split(all_data, ids):
-    df = pd.DataFrame(columns=all_data.columns)
-    for i in tqdm(ids['id'].values):
-        rows = all_data[all_data['id']==i]
-        if len(rows) < 1:
-            import ipdb;ipdb.set_trace()
-        df = df.append(rows)
-    return df
-
-
+# Loads and caches data, does not cache if text_only features, 
+# because this is model dependent and quick to compute
 def load(datadir, cachedir=None, override_cache=False, text_only=False):
-
-
     # If exists caches for all splits and not override cache, load cached data
     if all((
             os.path.exists(os.path.join(cachedir, 'train.pkl')),
@@ -160,11 +130,7 @@ if __name__=="__main__":
     logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
     start = time.time()
-
     # Dataframes
     train, dev, test = load(args.datadir, cachedir=args.cachedir, override_cache=True)
-
-    # import ipdb;ipdb.set_trace()
-
     end = time.time()
     logging.info(f'Time to run script: {end-start} secs')
