@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from sklearn.metrics import classification_report
 from data import load
-from models import FeedForward, BiLSTM, LogisticRegression
+from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote
 from utils import train_pytorch, test_pytorch
 from pprint import pprint
 import json
@@ -61,6 +61,9 @@ def train(args):
     elif args.model.lower() == "logreg":
         model = LogisticRegression()
         model.train(train_data, train_labels, dev_data, dev_labels)
+    elif args.model.lower() == "majority-vote":
+        model = MajorityVote()
+        model.train(train_labels, dev_labels)
     else:
         raise Exception("Unknown model type passed in!")
     
@@ -79,6 +82,9 @@ def test(args):
     elif args.model.lower() == "logreg":
         model = LogisticRegression(load_model_path="models/logreg.pkl")
         preds = model.test(test_data, test_labels)
+    elif args.model.lower() == "majority-vote":
+        model = MajorityVote(load_model_path="models/majority-class.txt")
+        preds = model.test(test_labels)
     else:
         raise Exception("Unknown model type passed in!")
     

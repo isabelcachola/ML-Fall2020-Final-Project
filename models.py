@@ -23,6 +23,29 @@ from sklearn import linear_model
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import mean_squared_error
 import pickle
+from scipy import stats
+
+class MajorityVote:
+    def __init__(self, load_model_path=None):
+        if load_model_path is not None:
+            with open(load_model_path) as fin:
+                self.majority_class = int(fin.read().strip())
+        else:
+            self.majority_class = None
+
+    def train(self, y_train, y_dev):
+        self.majority_class = stats.mode(y_train).mode.item()
+
+        with open('models/majority-class.txt', 'w') as fout:
+            fout.write(str(self.majority_class))
+
+        y_hat = [self.majority_class]*len(y_dev)
+        print('Validation Accuracy', (y_hat == y_dev).mean())
+        print('Validation F1 Score:', f1_score(y_dev, y_hat, average='weighted'))
+    
+    def test(self, y_test):
+        return [self.majority_class]*len(y_test)
+
 
 class FeedForward(torch.nn.Module):
     def __init__(self, hidden_dim, input_dim):
