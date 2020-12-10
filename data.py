@@ -12,15 +12,16 @@ from transformers import BertTokenizer, BertModel
 import numpy as np
 from tqdm import tqdm
 import pickle
+from utils import get_appendix
 
 class Data:
-    def __init__(self, raw_data, text_only=False):
+    def __init__(self, raw_data, text_only=False, include_tfidf=False):
         self.bert = BertModel.from_pretrained('bert-base-uncased', output_hidden_states = True).eval()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
         self.scaler = preprocessing.StandardScaler() # Can change this to choose different scaler
 
-        self.X, self.y = self.featurize(raw_data, text_only=text_only)
+        self.X, self.y = self.featurize(raw_data, text_only=text_only, include_tfidf=include_tfidf)
 
     # Code from https://mccormickml.com/2019/05/14/BERT-word-embeddings-tutorial/
     def _get_bert_embed(self, text):
@@ -48,7 +49,7 @@ class Data:
         return sentence_embedding.tolist()
 
     # Change this function to change how data is featurized
-    def featurize(self, df, text_only=False):
+    def featurize(self, df, text_only=False, include_tfidf=False):
         # df = df.head(n=100)
         if text_only:
             X = df['text'].values
@@ -66,11 +67,14 @@ class Data:
             X2 = pd.DataFrame([self._get_bert_embed(tweet) for tweet in tqdm(df['text'].values)])
             X2.columns = [f'b{i}' for i in range(X2.shape[1])]
 
-            # logging.info('Loading precomputed tfidf scores')
-            # X3 = pd.DataFrame([eval(row) for row in tqdm(df['hashtags_tfidf'].values)])
-            # X3.columns = [f'h{i}' for i in range(X3.shape[1])]
-
             X = pd.concat([X1, X2], axis=1, sort=False)
+
+            if include_tfidf:
+                logging.info('Loading precomputed tfidf scores')
+                X3 = pd.DataFrame([eval(row) for row in tqdm(df['hashtags_tfidf'].values)])
+                X3.columns = [f'h{i}' for i in range(X3.shape[1])]
+                X = pd.concat([X1, X2, X3], axis=1, sort=False)
+
             X = X.values
             y = df['label'].values
 
@@ -88,18 +92,20 @@ def read_pickle(path):
 
 # Loads and caches data, does not cache if text_only features, 
 # because this is model dependent and quick to compute
-def load(datadir, cachedir=None, override_cache=False, text_only=False):
+def load(datadir, cachedir=None, override_cache=False, 
+        text_only=False, include_tfidf=False, balanced=False):
     # If exists caches for all splits and not override cache, load cached data
+    appendix = get_appendix(include_tfidf, balanced)
     if all((
-            os.path.exists(os.path.join(cachedir, 'train.pkl')),
-            os.path.exists(os.path.join(cachedir, 'dev.pkl')),
-            os.path.exists(os.path.join(cachedir, 'test.pkl')),
+            os.path.exists(os.path.join(cachedir, f'train{appendix}.pkl')),
+            os.path.exists(os.path.join(cachedir, f'dev{appendix}.pkl')),
+            os.path.exists(os.path.join(cachedir, f'test{appendix}.pkl')),
             not override_cache,
             not text_only
         )):
-        train = read_pickle(os.path.join(cachedir, 'train.pkl'))
-        dev  = read_pickle(os.path.join(cachedir, 'dev.pkl'))
-        test = read_pickle(os.path.join(cachedir, 'test.pkl'))
+        train = read_pickle(os.path.join(cachedir, f'train{appendix}.pkl'))
+        dev  = read_pickle(os.path.join(cachedir, f'dev{appendix}.pkl'))
+        test = read_pickle(os.path.join(cachedir, f'test{appendix}.pkl'))
 
     else:
         all_data = pd.read_csv(os.path.join(datadir, 'all_data_preprocessed.tsv'), sep='\t')
@@ -110,14 +116,14 @@ def load(datadir, cachedir=None, override_cache=False, text_only=False):
         dev_ids = pd.read_csv(os.path.join(datadir, 'dev-ids.txt'), names=['id'])
         test_ids = pd.read_csv(os.path.join(datadir, 'test-ids.txt'), names=['id'])
 
-        train = Data(train_ids.merge(all_data, how='inner', on='id'), text_only=text_only)
-        dev = Data(dev_ids.merge(all_data, how='inner', on='id'), text_only=text_only)
-        test = Data(test_ids.merge(all_data, how='inner', on='id'), text_only=text_only)
+        train = Data(train_ids.merge(all_data, how='inner', on='id'), text_only=text_only, include_tfidf=include_tfidf)
+        dev = Data(dev_ids.merge(all_data, how='inner', on='id'), text_only=text_only, include_tfidf=include_tfidf)
+        test = Data(test_ids.merge(all_data, how='inner', on='id'), text_only=text_only, include_tfidf=include_tfidf)
 
         if cachedir and not text_only:
-            train.to_pickle(os.path.join(cachedir, 'train.pkl'))
-            dev.to_pickle(os.path.join(cachedir, 'dev.pkl'))
-            test.to_pickle(os.path.join(cachedir, 'test.pkl'))
+            train.to_pickle(os.path.join(cachedir, f'train{appendix}.pkl'))
+            dev.to_pickle(os.path.join(cachedir, f'dev{appendix}.pkl'))
+            test.to_pickle(os.path.join(cachedir, f'test{appendix}.pkl'))
 
     return train, dev, test
 

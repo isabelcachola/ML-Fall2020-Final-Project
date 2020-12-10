@@ -2,8 +2,17 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import csv
+from sklearn import metrics
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def get_appendix(include_tfidf, balanced):
+    appendix = ''
+    if include_tfidf:
+        appendix += '-tfidf'
+    if balanced:
+        appendix += '-balanced'
+    return appendix
 
 def approx_train_acc_and_loss(model, train_data, train_labels):
     idxs = np.random.choice(len(train_data), len(train_data), replace=False)
@@ -27,7 +36,10 @@ def dev_acc_and_loss(model, dev_data, dev_labels):
 def accuracy(y, y_hat):
     return (y == y_hat).astype(np.float).mean()
 
-def train_pytorch(args, model, train_data, train_labels, dev_data, dev_labels):
+def train_pytorch(args, model, 
+                train_data, train_labels, 
+                dev_data, dev_labels,
+                save_model_path="models/simple-ff.torch"):
     # setup metric logging. It's important to log your loss!!
     log_f = open(args.log_file, 'w')
     fieldnames = ['step', 'train_loss', 'train_acc', 'dev_loss', 'dev_acc']
@@ -76,13 +88,14 @@ def train_pytorch(args, model, train_data, train_labels, dev_data, dev_labels):
     # close the log file
     log_f.close()
     # save model
-    print(f'Done training. Saving model at models/simple-ff.torch')
-    torch.save(model, 'models/simple-ff.torch')
+    print(f'Done training. Saving model at {save_model_path}')
+    torch.save(model, save_model_path)
 
-def test_pytorch(test_data, test_labels):
-        model = torch.load('models/simple-ff.torch', map_location=device)
+def test_pytorch(test_data, test_labels, 
+                load_model_path="models/simple-ff.torch",
+                predictions_file="preds/simple-ff-preds.txt"):
+        model = torch.load(load_model_path, map_location=device)
         model.device = device
-        predictions_file = "preds/simple-ff-preds.txt"
         preds = []
         for test_ex in test_data:
             x = torch.from_numpy(test_ex.astype(np.float32))
