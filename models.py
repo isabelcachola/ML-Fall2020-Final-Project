@@ -77,7 +77,7 @@ class LogisticRegression:
             self.model = linear_model.LogisticRegression
         
     
-    def train(self, X_train, y_train, X_dev, y_dev):
+    def train(self, X_train, y_train, X_dev, y_dev, save_model_path="models/logreg.pkl"):
         cws = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train)
         self.model = self.model(class_weight=cws, random_state=1, max_iter=500)
 
@@ -88,12 +88,12 @@ class LogisticRegression:
         print('Validation Accuracy', (y_hat.argmax(axis = 1) == y_dev).mean())
         print('Validation F1 Score:', f1_score(y_dev, y_hat.argmax(axis = 1), average='weighted'))
 
-        with open("models/logreg.pkl", 'wb') as file:
+        with open(save_model_path, 'wb') as file:
             pickle.dump(self.model, file)
     
-    def test(self, X_test, y_test=None):
+    def test(self, X_test, y_test=None, save_predictions_path="preds/logreg-preds.txt"):
         predictions = self.model.predict(X_test)
-        np.savetxt("preds/logreg-preds.txt", predictions, fmt='%d')
+        np.savetxt(save_predictions_path, predictions, fmt='%d')
         return predictions
 
 # This is Kevin's code in class form
