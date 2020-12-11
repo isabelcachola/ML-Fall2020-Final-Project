@@ -222,14 +222,8 @@ def preprocess_tweets(datadir):
 
     logging.info('Getting tfidf stats')
     df = getTfidfStats(df)
-    desired_columns = ["processed_text", "retweet_count", "like_count", "reply_count",
-                       "quote_count", "mentions_count", "label", "sentiment_score_comp",
-                       "sentiment_score_pos", "sentiment_score_neg", "sentiment_score_neu",
-                       "author_followers", "text_tfid_sum", "text_tfid_max", "text_tfid_min",
-                       "text_tfid_avg", "text_tfid_std", "hashtag_tfid_sum", "hashtag_tfid_max",
-                       "hashtag_tfid_min", "hashtag_tfid_avg", "hashtag_tfid_std"]
 
-    return df[desired_columns]
+    return df
 
 
 if __name__ == "__main__":
