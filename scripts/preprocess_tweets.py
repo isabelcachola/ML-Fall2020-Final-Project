@@ -215,10 +215,10 @@ def preprocess_tweets(datadir):
     df["hashtags_tfidf"] = hero.tfidf(df['hashtags'])
 
     logging.info('Getting sentiment scores')
-    df["sentiment_score_pos"] = df['text'].apply(getSentimentScore, type="pos")
-    df["sentiment_score_neu"] = df['text'].apply(getSentimentScore, type="neu")
-    df["sentiment_score_neg"] = df['text'].apply(getSentimentScore, type="neg")
-    df["sentiment_score_comp"] = df['text'].apply(getSentimentScore, type="compound")
+    df["sentiment_score_pos"] = df['text'].apply(getSentimentScore, sentiment_type="pos")
+    df["sentiment_score_neu"] = df['text'].apply(getSentimentScore, sentiment_type="neu")
+    df["sentiment_score_neg"] = df['text'].apply(getSentimentScore, sentiment_type="neg")
+    df["sentiment_score_comp"] = df['text'].apply(getSentimentScore, sentiment_type="compound")
 
     logging.info('Getting tfidf stats')
     df = getTfidfStats(df)
