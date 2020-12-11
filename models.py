@@ -20,10 +20,12 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 # Log Regression imports
 from sklearn import linear_model
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import mean_squared_error
 import pickle
 from scipy import stats
+
 
 class MajorityVote:
     def __init__(self, load_model_path=None):
@@ -39,12 +41,12 @@ class MajorityVote:
         with open('models/majority-class.txt', 'w') as fout:
             fout.write(str(self.majority_class))
 
-        y_hat = [self.majority_class]*len(y_dev)
+        y_hat = [self.majority_class] * len(y_dev)
         print('Validation Accuracy', (y_hat == y_dev).mean())
         print('Validation F1 Score:', f1_score(y_dev, y_hat, average='weighted'))
-    
+
     def test(self, y_test):
-        return [self.majority_class]*len(y_test)
+        return [self.majority_class] * len(y_test)
 
 
 class FeedForward(torch.nn.Module):
@@ -67,6 +69,7 @@ class FeedForward(torch.nn.Module):
 
         return logits
 
+
 # This is Olga's code in class form
 class LogisticRegression:
     def __init__(self, load_model_path=None):
@@ -75,39 +78,39 @@ class LogisticRegression:
                 self.model = pickle.load(file)
         else:
             self.model = linear_model.LogisticRegression
-        
-    
+
     def train(self, X_train, y_train, X_dev, y_dev, save_model_path="models/logreg.pkl"):
         cws = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train)
         self.model = self.model(class_weight=cws, random_state=1, max_iter=500)
 
         self.model.fit(X_train, y_train)
-        
+
         y_hat = self.model.predict_proba(X_dev)
         print('Validation Loss:', log_loss(y_dev, y_hat))
-        print('Validation Accuracy', (y_hat.argmax(axis = 1) == y_dev).mean())
-        print('Validation F1 Score:', f1_score(y_dev, y_hat.argmax(axis = 1), average='weighted'))
+        print('Validation Accuracy', (y_hat.argmax(axis=1) == y_dev).mean())
+        print('Validation F1 Score:', f1_score(y_dev, y_hat.argmax(axis=1), average='weighted'))
 
         with open(save_model_path, 'wb') as file:
             pickle.dump(self.model, file)
-    
+
     def test(self, X_test, y_test=None, save_predictions_path="preds/logreg-preds.txt"):
         predictions = self.model.predict(X_test)
         np.savetxt(save_predictions_path, predictions, fmt='%d')
         return predictions
 
+
 # This is Kevin's code in class form
 class BiLSTM:
-    def __init__(self, epochs=5, 
-            batch_size=36, 
-            max_seq_len=25,
-            fit_verbose=2,
-            print_summary=True,
-            load_model_path=None,
-            tokenizer_path=None):
+    def __init__(self, epochs=5,
+                 batch_size=36,
+                 max_seq_len=25,
+                 fit_verbose=2,
+                 print_summary=True,
+                 load_model_path=None,
+                 tokenizer_path=None):
         self.epochs = epochs
         self.batch_size = batch_size
-        self.max_seq_len = max_seq_len 
+        self.max_seq_len = max_seq_len
         self.fit_verbose = fit_verbose
         self.print_summary = print_summary
         self.encoder = LabelEncoder()
@@ -118,9 +121,9 @@ class BiLSTM:
                 data = json.load(f)
                 self.tokenizer = tokenizer_from_json(data)
         else:
-            self.model = self.model_1b 
+            self.model = self.model_1b
             self.tokenizer = Tokenizer()
-        
+
     def train(self, X_train, y_train, X_dev, y_dev):
         self.tokenizer.fit_on_texts(X_train)
 
@@ -131,30 +134,30 @@ class BiLSTM:
         X_dev = pad_sequences(X_dev, maxlen=self.max_seq_len)
 
         y_train = self.encoder.fit_transform(y_train)
-        y_train = to_categorical(y_train) 
+        y_train = to_categorical(y_train)
 
         y_dev = self.encoder.fit_transform(y_dev)
-        y_dev= to_categorical(y_dev) 
+        y_dev = to_categorical(y_dev)
 
         m = self.model()
 
-        y_train_int = np.argmax(y_train,axis=1)
+        y_train_int = np.argmax(y_train, axis=1)
         cws = class_weight.compute_class_weight('balanced', np.unique(y_train_int), y_train_int)
 
         if self.print_summary:
             print(m.summary())
         m.fit(
-            X_train, 
-            y_train, 
-            validation_data=(X_dev, y_dev),  
-            epochs=self.epochs, 
+            X_train,
+            y_train,
+            validation_data=(X_dev, y_dev),
+            epochs=self.epochs,
             batch_size=self.batch_size,
             verbose=self.fit_verbose
-        ) 
+        )
         predictions = m.predict(X_dev, verbose=1)
         print('Validation Loss:', log_loss(y_dev, predictions))
-        print('Validation Accuracy', (predictions.argmax(axis = 1) == y_dev.argmax(axis = 1)).mean())
-        print('Validation F1 Score:', f1_score(y_dev.argmax(axis = 1), predictions.argmax(axis = 1), average='weighted'))
+        print('Validation Accuracy', (predictions.argmax(axis=1) == y_dev.argmax(axis=1)).mean())
+        print('Validation F1 Score:', f1_score(y_dev.argmax(axis=1), predictions.argmax(axis=1), average='weighted'))
         m.save('models/bilstm.keras')
         tokenizer_json = self.tokenizer.to_json()
         with io.open('models/bilstm-tokenizer.json', 'w', encoding='utf-8') as f:
@@ -167,7 +170,8 @@ class BiLSTM:
         Using a Bidiretional LSTM. 
         """
         model = Sequential()
-        model.add(Embedding(input_dim=(len(self.tokenizer.word_counts) + 1), output_dim=128, input_length=self.max_seq_len))
+        model.add(
+            Embedding(input_dim=(len(self.tokenizer.word_counts) + 1), output_dim=128, input_length=self.max_seq_len))
         model.add(SpatialDropout1D(0.3))
         model.add(Bidirectional(LSTM(128, dropout=0.25, recurrent_dropout=0.25)))
         model.add(Dense(64, activation='relu'))
@@ -179,14 +183,30 @@ class BiLSTM:
     def test(self, X_test, y_test=None):
         X_test = self.tokenizer.texts_to_sequences(X_test)
         X_test = pad_sequences(X_test, maxlen=self.max_seq_len)
-        
+
         predictions = self.model.predict(X_test, verbose=1)
         if y_test is not None:
             y_test = self.encoder.fit_transform(y_test)
-            y_test = to_categorical(y_test)     
+            y_test = to_categorical(y_test)
             print('Test Loss:', log_loss(y_test, predictions))
-            print('Test Accuracy', (predictions.argmax(axis = 1) == y_test.argmax(axis = 1)).mean())
-            print('Test F1 Score:', f1_score(y_test.argmax(axis = 1), predictions.argmax(axis = 1), average='weighted'))
+            print('Test Accuracy', (predictions.argmax(axis=1) == y_test.argmax(axis=1)).mean())
+            print('Test F1 Score:', f1_score(y_test.argmax(axis=1), predictions.argmax(axis=1), average='weighted'))
         predictions = np.argmax(predictions, axis=1)
         np.savetxt("preds/bilstm-preds.txt", predictions, fmt='%d')
         return predictions
+
+
+class SVM:
+    def __init__(self):
+        self.model = pickle.load(open('models/svm.sav', 'rb'))
+
+    def train(self, X_train, y_train, save_model_path="models/svm_new.sav"):
+        new_model = SVC(kernel="linear", C=0.025)
+        new_model.fit(X_train, y_train)
+        pickle.dump(new_model, open(save_model_path, 'wb'))
+        self.model = new_model
+
+    def test(self, x_test, y_test=None, save_predictions_path="preds/svm-preds.txt"):
+        pred = self.model.predict(x_test)
+        np.savetxt(save_predictions_path, pred, fmt='%d')
+        return pred
