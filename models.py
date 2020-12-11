@@ -197,8 +197,9 @@ class BiLSTM:
 
 
 class SVM:
-    def __init__(self):
-        self.model = pickle.load(open('models/svm.sav', 'rb'))
+    def __init__(self, load_model_path=None):
+        if load_model_path:
+            self.model = pickle.load(open(load_model_path, 'rb'))
 
     def train(self, X_train, y_train, save_model_path="models/svm_new.sav"):
         new_model = SVC(kernel="linear", C=0.025)

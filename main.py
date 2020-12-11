@@ -104,7 +104,7 @@ def test(args):
         model = MajorityVote(load_model_path="models/majority-class.txt")
         preds = model.test(test_labels)
     elif args.model.lower() == "svm":
-        model = SVM()
+        model = SVM(load_model_path=f"models/svm{apx}.sav")
         preds = model.test(test_data, save_predictions_path=f"preds/svm-preds{apx}.txt")
     else:
         raise Exception("Unknown model type passed in!")
