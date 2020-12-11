@@ -7,10 +7,11 @@ import numpy as np
 import torch
 from sklearn.metrics import classification_report
 from data import load
-from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote
+from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote, SVM
 from utils import train_pytorch, test_pytorch, get_appendix
 from pprint import pprint
 import json
+
 
 def get_args():
     """ Define our command line arguments. """
@@ -30,7 +31,6 @@ def get_args():
     p.add_argument('--include-tfidf', default=False, action='store_true')
     p.add_argument('--override-cache', default=False, action='store_true')
 
-
     # hyperparameters
     p.add_argument("--batch-size", type=int, default=36)
 
@@ -41,75 +41,78 @@ def get_args():
 
     # bi-lstm hparams
     p.add_argument("--num-epochs", type=int, default=5)
-    
 
     return p.parse_args()
 
 
 def train(args):
     # load data
-    train, dev, _ = load(args.data_dir, cachedir=args.cachedir, 
-                        override_cache=args.override_cache, 
-                        text_only=(args.model.lower() == "bi-lstm"),
-                        include_tfidf=args.include_tfidf)
+    train, dev, _ = load(args.data_dir, cachedir=args.cachedir,
+                         override_cache=args.override_cache,
+                         text_only=(args.model.lower() == "bi-lstm"),
+                         include_tfidf=args.include_tfidf)
     train_data, train_labels = train.X, train.y
     dev_data, dev_labels = dev.X, dev.y
 
     # Build model
+    apx = get_appendix(args.include_tfidf, args.balanced)
     if args.model.lower() == "simple-ff":
-        apx = get_appendix(args.include_tfidf, args.balanced)
         model = FeedForward(args.ff_hunits, train.X.shape[1])
-        train_pytorch(args, model, 
-                        train_data, train_labels, 
-                        dev_data, dev_labels,
-                        save_model_path=f"models/simple-ff{apx}.torch")
+        train_pytorch(args, model,
+                      train_data, train_labels,
+                      dev_data, dev_labels,
+                      save_model_path=f"models/simple-ff{apx}.torch")
     elif args.model.lower() == "bi-lstm":
         model = BiLSTM(epochs=args.num_epochs, batch_size=args.batch_size)
         model.train(train_data, train_labels, dev_data, dev_labels)
     elif args.model.lower() == "logreg":
-        apx = get_appendix(args.include_tfidf, args.balanced)
         model = LogisticRegression()
-        model.train(train_data, train_labels, dev_data, dev_labels, 
-        save_model_path=f"models/logreg{apx}.pkl")
+        model.train(train_data, train_labels, dev_data, dev_labels,
+                    save_model_path=f"models/logreg{apx}.pkl")
     elif args.model.lower() == "majority-vote":
         model = MajorityVote()
         model.train(train_labels, dev_labels)
+    elif args.model.lower() == "svm":
+        model = SVM()
+        model.train(train_data, train_labels, save_model_path=f"models/svm{apx}.sav")
     else:
         raise Exception("Unknown model type passed in!")
-    
+
 
 def test(args):
-    _, _, test = load(args.data_dir, cachedir=args.cachedir, 
-                    override_cache=args.override_cache, 
-                    text_only=(args.model.lower() == "bi-lstm"),
-                    include_tfidf=args.include_tfidf)
+    _, _, test = load(args.data_dir, cachedir=args.cachedir,
+                      override_cache=args.override_cache,
+                      text_only=(args.model.lower() == "bi-lstm"),
+                      include_tfidf=args.include_tfidf)
     test_data, test_labels = test.X, test.y
 
     apx = get_appendix(args.include_tfidf, args.balanced)
     if args.model.lower() == "simple-ff":
         preds = test_pytorch(test_data, test_labels,
-                            load_model_path=f"models/simple-ff{apx}.torch",
-                            predictions_file=f"preds/simple-ff-preds{apx}.txt"
-                            )
+                             load_model_path=f"models/simple-ff{apx}.torch",
+                             predictions_file=f"preds/simple-ff-preds{apx}.txt"
+                             )
     elif args.model.lower() == "bi-lstm":
-        model = BiLSTM(load_model_path="models/bilstm.keras", 
-                        tokenizer_path='models/bilstm-tokenizer.json')
+        model = BiLSTM(load_model_path="models/bilstm.keras",
+                       tokenizer_path='models/bilstm-tokenizer.json')
         preds = model.test(test_data, y_test=test_labels)
     elif args.model.lower() == "logreg":
         model = LogisticRegression(load_model_path=f"models/logreg{apx}.pkl")
-        preds = model.test(test_data, test_labels, 
-                            save_predictions_path=f"preds/logreg-preds{apx}.txt")
+        preds = model.test(test_data, test_labels,
+                           save_predictions_path=f"preds/logreg-preds{apx}.txt")
     elif args.model.lower() == "majority-vote":
         model = MajorityVote(load_model_path="models/majority-class.txt")
         preds = model.test(test_labels)
+    elif args.model.lower() == "svm":
+        model = SVM(load_model_path=f"models/svm{apx}.sav")
+        preds = model.test(test_data, save_predictions_path=f"preds/svm-preds{apx}.txt")
     else:
         raise Exception("Unknown model type passed in!")
-    
+
     metrics = classification_report(test_labels, preds, output_dict=True)
     pprint(metrics)
     with open(f"scores/{args.model.lower()}{apx}.json", "w") as fout:
         json.dump(metrics, fout, indent=4)
-
 
 
 if __name__ == '__main__':

@@ -51,20 +51,25 @@ class Data:
     # Change this function to change how data is featurized
     def featurize(self, df, text_only=False, include_tfidf=False):
         # df = df.head(n=100)
+        df = df[~df['processed_text'].isna()]
         if text_only:
-            X = df['text'].values
+            X = df['processed_text'].values
             y = df['label'].values
         else:    
             x1_cols = ['like_count', 'quote_count', 
-                        # 'mentions_count', 'author_followers',
+                        'mentions_count', 'author_followers',
                         'sentiment_score_pos', 'sentiment_score_neu', 
-                        'sentiment_score_neg', 'sentiment_score_comp']
+                        'sentiment_score_neg', 'sentiment_score_comp',
+                        'text_tfid_sum', 'text_tfid_max', 'text_tfid_min', 'text_tfid_avg',
+                        'text_tfid_std', 'hashtag_tfid_sum', 'hashtag_tfid_max',
+                        'hashtag_tfid_min', 'hashtag_tfid_avg', 'hashtag_tfid_std']
             X1 = df[x1_cols]
             X1 = self.scaler.fit_transform(X1) # Scale values
             X1 = pd.DataFrame(X1, columns=x1_cols)
 
             logging.info('Getting bert embeddings...')
-            X2 = pd.DataFrame([self._get_bert_embed(tweet) for tweet in tqdm(df['text'].values)])
+            # import ipdb; ipdb.set_trace()
+            X2 = pd.DataFrame([self._get_bert_embed(tweet) for tweet in tqdm(df['processed_text'].values)])
             X2.columns = [f'b{i}' for i in range(X2.shape[1])]
 
             X = pd.concat([X1, X2], axis=1, sort=False)
