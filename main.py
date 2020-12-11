@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from sklearn.metrics import classification_report
 from data import load
-from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote
+from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote, Bert
 from utils import train_pytorch, test_pytorch, get_appendix
 from pprint import pprint
 import json
@@ -50,7 +50,7 @@ def train(args):
     # load data
     train, dev, _ = load(args.data_dir, cachedir=args.cachedir, 
                         override_cache=args.override_cache, 
-                        text_only=(args.model.lower() == "bi-lstm"),
+                        text_only=(args.model.lower() in ["bi-lstm", "bert"]),
                         include_tfidf=args.include_tfidf)
     train_data, train_labels = train.X, train.y
     dev_data, dev_labels = dev.X, dev.y
@@ -74,6 +74,14 @@ def train(args):
     elif args.model.lower() == "majority-vote":
         model = MajorityVote()
         model.train(train_labels, dev_labels)
+    elif args.model.lower() == "bert":
+        model = Bert(epochs=args.num_epochs, 
+                    batch_size=args.batch_size, 
+                    max_seq_len=args.max_seq_len,
+                    learning_rate=args.learning_rate
+                    )
+        model.train(train_data, train_labels, dev_data, dev_labels, 
+                    save_model_path=f"models/bert.pkl")
     else:
         raise Exception("Unknown model type passed in!")
     
@@ -81,7 +89,7 @@ def train(args):
 def test(args):
     _, _, test = load(args.data_dir, cachedir=args.cachedir, 
                     override_cache=args.override_cache, 
-                    text_only=(args.model.lower() == "bi-lstm"),
+                    text_only=(args.model.lower() in ["bi-lstm", "bert"]),
                     include_tfidf=args.include_tfidf)
     test_data, test_labels = test.X, test.y
 
@@ -102,6 +110,10 @@ def test(args):
     elif args.model.lower() == "majority-vote":
         model = MajorityVote(load_model_path="models/majority-class.txt")
         preds = model.test(test_labels)
+    elif args.model.lower() == "bert":
+        model = Bert(load_model_path="models/bert.pkl")
+        preds = model.test(test_data, test_labels, 
+                    save_predictions_path="preds/bert-preds.txt")
     else:
         raise Exception("Unknown model type passed in!")
     
