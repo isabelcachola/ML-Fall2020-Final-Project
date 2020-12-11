@@ -63,7 +63,7 @@ hashtag_tfid_std: the standart deviation of the tfids of the hashtags of the twe
 # Training
 To train a model, run the following command:
 ```
-$ python main.py train {logreg|bi-lstm|simple-ff} {optional parameters}
+$ python main.py train {logreg|bi-lstm|simple-ff|svm} {optional parameters}
 ```
 The script will cache the featurized data in `data/`. If you are making changes to the featurization, use the flag `--override-cache`.
 
@@ -74,7 +74,7 @@ The script saves the modeling weights to `models/`.
 To test a model, run the following command:
 To train a model, run the following command:
 ```
-$ python main.py predict {logreg|bi-lstm|simple-ff} {optional parameters}
+$ python main.py predict {logreg|bi-lstm|simple-ff|svm} {optional parameters}
 ```
 
 The script saves predictions to `preds/` and testing metrics to `scores/`
