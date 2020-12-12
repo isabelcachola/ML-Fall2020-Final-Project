@@ -6,23 +6,7 @@ from data import load
 from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote, SVM
 from utils import train_pytorch, test_pytorch, get_appendix
 from pprint import pprint
-from imblearn.over_sampling import SMOTE
 import json
-import pandas as pd
-
-
-def balance_train_data(x_train, y_train):
-    """
-    This function balances the data by up-sampling the minority class
-    :param x_train: the train x data
-    :param y_train: the train labels
-    :return: the up-sampled x (in dataframe format) and y (in numpy array format) data
-    """
-
-    smote = SMOTE()
-    # fit predictor and target variable
-    x_smote, y_smote = smote.fit_resample(x_train, y_train)
-    return pd.DataFrame(x_smote, columns=x_train.columns), y_smote
 
 
 def get_args():
@@ -72,10 +56,6 @@ def train(args):
     train_data, train_labels = train_data_all.X, train_data_all.y
     dev_data, dev_labels = dev_data_all.X, dev_data_all.y
 
-    # Check if should balance data
-    if args.balanced:
-        train_data_balanced, train_labels_balanced = balance_train_data(train_data, train_labels)
-
     # Build model
     apx = get_appendix(args.include_tfidf, args.balanced)
     if args.model.lower() == "simple-ff":
@@ -89,22 +69,14 @@ def train(args):
         model.train(train_data, train_labels, dev_data, dev_labels)
     elif args.model.lower() == "logreg":
         model = LogisticRegression()
-        if args.balanced:
-            model.train(train_data_balanced, train_labels_balanced, dev_data, dev_labels,
-                        save_model_path=f"models/logreg{apx}.pkl")
-        else:
-            model.train(train_data, train_labels, dev_data, dev_labels,
-                        save_model_path=f"models/logreg{apx}.pkl")
+        model.train(train_data, train_labels, dev_data, dev_labels,
+                    save_model_path=f"models/logreg{apx}.pkl")
     elif args.model.lower() == "majority-vote":
         model = MajorityVote()
         model.train(train_labels, dev_labels)
     elif args.model.lower() == "svm":
         model = SVM()
-        if args.balanced:
-            model.train(train_data_balanced, train_labels_balanced,
-                        save_model_path=f"models/svm{apx}.sav")
-        else:
-            model.train(train_data, train_labels, save_model_path=f"models/svm{apx}.sav")
+        model.train(train_data, train_labels, save_model_path=f"models/svm{apx}.sav")
     else:
         raise Exception("Unknown model type passed in!")
 
