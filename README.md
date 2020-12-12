@@ -40,7 +40,7 @@ like_count: int
 quote_count: int
 author_followers: int
 mentions: list of mentions
-mentions_count: int
+mentions_count: the number of mentions
 hashtags: string of hashtags
 label: Bindary label to predict
 hashtags_tfidf: Precomputed hashtag tfidf scores
@@ -48,12 +48,22 @@ sentiment_score_pos: Precomputed sentiment score positive
 sentiment_score_neu: Precomputed sentiment score neutrial
 sentiment_score_neg: Precomputed sentiment score negative
 sentiment_score_comp: Precomputed sentiment score composed
+text_tfid_sum: the sum of all tfids of the words in the text of the tweet
+text_tfid_max: the max tfids of the words in the text of the tweet
+text_tfid_min: the min tfids of the words in the text of the tweet
+text_tfid_avg: the average tfids of the words in the text of the tweet
+text_tfid_std: the standart deviation tfids of the words in the text of the tweet
+hashtag_tfid_sum: the sum of all tfids of the hashtags of the tweet
+hashtag_tfid_max: the max tfids of the hashtags of the tweet
+hashtag_tfid_min: the min tfids of the hashtags of the tweet
+hashtag_tfid_avg: the average tfids of the hashtags of the tweet
+hashtag_tfid_std: the standart deviation of the tfids of the hashtags of the tweet
 ```
 
 # Training
 To train a model, run the following command:
 ```
-$ python main.py train {logreg|bi-lstm|simple-ff} {optional parameters}
+$ python main.py train {logreg|bi-lstm|simple-ff|svm} {optional parameters}
 ```
 The script will cache the featurized data in `data/`. If you are making changes to the featurization, use the flag `--override-cache`.
 
@@ -64,7 +74,7 @@ The script saves the modeling weights to `models/`.
 To test a model, run the following command:
 To train a model, run the following command:
 ```
-$ python main.py predict {logreg|bi-lstm|simple-ff} {optional parameters}
+$ python main.py predict {logreg|bi-lstm|simple-ff|svm} {optional parameters}
 ```
 
 The script saves predictions to `preds/` and testing metrics to `scores/`
