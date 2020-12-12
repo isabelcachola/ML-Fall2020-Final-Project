@@ -69,6 +69,9 @@ The script will cache the featurized data in `data/`. If you are making changes 
 
 The script saves the modeling weights to `models/`.
 
+If you want to use up-sampling to balance the data (in case you have highly umbalanced data),
+use the flag --balance
+
 # Testing
 
 To test a model, run the following command:
