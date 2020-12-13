@@ -39,8 +39,10 @@ def get_args():
     p.add_argument("--train-steps", type=int, default=500)
     p.add_argument("--ff-hunits", type=int, default=128)
 
-    # bi-lstm hparams
+    # bi-lstm/bert hparams
     p.add_argument("--num-epochs", type=int, default=5)
+    p.add_argument("--max-seq-len", type=int, default=25)
+    
 
     return p.parse_args()
 
@@ -64,7 +66,9 @@ def train(args):
                       dev_data, dev_labels,
                       save_model_path=f"models/simple-ff{apx}.torch")
     elif args.model.lower() == "bi-lstm":
-        model = BiLSTM(epochs=args.num_epochs, batch_size=args.batch_size)
+        model = BiLSTM(epochs=args.num_epochs, 
+                        batch_size=args.batch_size,
+                        max_seq_len=args.max_seq_len)
         model.train(train_data, train_labels, dev_data, dev_labels)
     elif args.model.lower() == "logreg":
         model = LogisticRegression()
