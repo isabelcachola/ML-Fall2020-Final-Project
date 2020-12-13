@@ -202,6 +202,22 @@ class BiLSTM:
         np.savetxt("preds/bilstm-preds.txt", predictions, fmt='%d')
         return predictions
 
+class SVM:
+    def __init__(self, load_model_path=None):
+        if load_model_path:
+            self.model = pickle.load(open(load_model_path, 'rb'))
+
+    def train(self, X_train, y_train, save_model_path="models/svm_new.sav"):
+        new_model = SVC(kernel="linear", C=0.025)
+        new_model.fit(X_train, y_train)
+        pickle.dump(new_model, open(save_model_path, 'wb'))
+        self.model = new_model
+
+    def test(self, x_test, y_test=None, save_predictions_path="preds/svm-preds.txt"):
+        pred = self.model.predict(x_test)
+        np.savetxt(save_predictions_path, pred, fmt='%d')
+        return pred
+
 class Bert:
     def __init__(self,  epochs=1, 
                     batch_size=36, 

@@ -50,7 +50,8 @@ def train(args):
     train, dev, _ = load(args.data_dir, cachedir=args.cachedir, 
                         override_cache=args.override_cache, 
                         text_only=(args.model.lower() in ["bi-lstm", "bert"]),
-                        include_tfidf=args.include_tfidf)
+                        include_tfidf=args.include_tfidf,
+                        balanced=args.balanced)
     train_data, train_labels = train.X, train.y
     dev_data, dev_labels = dev.X, dev.y
 
@@ -91,7 +92,8 @@ def test(args):
     _, _, test = load(args.data_dir, cachedir=args.cachedir, 
                     override_cache=args.override_cache, 
                     text_only=(args.model.lower() in ["bi-lstm", "bert"]),
-                    include_tfidf=args.include_tfidf)
+                    include_tfidf=args.include_tfidf,
+                    balanced=args.balanced)
     test_data, test_labels = test.X, test.y
 
     apx = get_appendix(args.include_tfidf, args.balanced)
