@@ -30,8 +30,7 @@ from transformers import BertTokenizer
 import tensorflow_datasets as tfds
 from transformers import TFBertForSequenceClassification
 import tensorflow as tf
-from keras import backend as K
-
+import keras.backend as K
 
 class MajorityVote:
     def __init__(self, load_model_path=None):
@@ -204,17 +203,21 @@ class Bert:
                     batch_size=36, 
                     max_seq_len=25,
                     learning_rate=2e-5,
-                    load_model_path=None):
+                    load_model_path=None,
+                    gpu_count=None):
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.max_seq_len = max_seq_len 
         self.batch_size = batch_size
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-        K.tensorflow_backend._get_available_gpus()
+    
+        self.gpu_count = gpu_count if gpu_count is not None else len(tf.config.experimental.list_physical_devices('GPU'))
+        
 
         if load_model_path:
-            self.model = load_model(load_model_path)
+            self.model = TFBertForSequenceClassification.from_pretrained('bert-base-uncased')
+            self.model.load_weights(load_model_path).expect_partial()
 
     def map_example_to_dict(self, input_ids, attention_masks, token_type_ids, label):
         return {
@@ -258,7 +261,7 @@ class Bert:
                     save_model_path=f"models/bert.pkl"):
         ds_train_encoded = self.encode_examples(train_data, train_labels).batch(self.batch_size)
         ds_dev_encoded = self.encode_examples(dev_data, dev_labels).batch(self.batch_size)
-
+       
         self.model = TFBertForSequenceClassification.from_pretrained('bert-base-uncased')
         optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-08)
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -268,21 +271,22 @@ class Bert:
         self.model.fit(ds_train_encoded, epochs=self.epochs, validation_data=ds_dev_encoded)
 
         predictions = self.model.predict(ds_dev_encoded, verbose=1).logits
+        self.model.save_weights(save_model_path)
         print('Validation Loss:', log_loss(dev_labels, predictions))
-        print('Validation Accuracy', (predictions.argmax(axis = 1) == dev_labels.argmax(axis = 1)).mean())
-        print('Validation F1 Score:', f1_score(dev_labels.argmax(axis = 1), predictions.argmax(axis = 1), average='weighted'))
-        self.model.save(save_model_path)
+        # print('Validation Accuracy', (predictions.argmax(axis = 1) == dev_labels.argmax(axis = 1)).mean())
+        # print('Validation F1 Score:', f1_score(dev_labels.argmax(axis = 1), predictions.argmax(axis = 1), average='weighted'))
 
     def test(self, X_test, y_test=None, save_predictions_path="preds/bert-preds.txt"):
+        # import ipdb;ipdb.set_trace()
         ds_test_encoded = self.encode_examples(X_test, y_test).batch(self.batch_size)
         
         predictions = self.model.predict(ds_test_encoded, verbose=1).logits
-        if y_test is not None:
-            y_test = self.encoder.fit_transform(y_test)
-            y_test = to_categorical(y_test)     
-            print('Test Loss:', log_loss(y_test, predictions))
-            print('Test Accuracy', (predictions.argmax(axis = 1) == y_test.argmax(axis = 1)).mean())
-            print('Test F1 Score:', f1_score(y_test.argmax(axis = 1), predictions.argmax(axis = 1), average='weighted'))
+        # if y_test is not None:
+        #     y_test = self.encoder.fit_transform(y_test)
+        #     y_test = to_categorical(y_test)     
+        #     print('Test Loss:', log_loss(y_test, predictions))
+        #     print('Test Accuracy', (predictions.argmax(axis = 1) == y_test.argmax(axis = 1)).mean())
+        #     print('Test F1 Score:', f1_score(y_test.argmax(axis = 1), predictions.argmax(axis = 1), average='weighted'))
         predictions = np.argmax(predictions, axis=1)
         np.savetxt(save_predictions_path, predictions, fmt='%d')
         return predictions
