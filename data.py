@@ -16,14 +16,14 @@ from utils import get_appendix
 from glob import glob
 
 class Data:
-    def __init__(self, raw_data, split, text_only=False, include_tfidf=False):
+    def __init__(self, raw_data, split, text_only=False, include_tfidf=False, balanced=False):
         self.bert = BertModel.from_pretrained('bert-base-uncased', output_hidden_states = True).eval()
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
         self.scaler = preprocessing.StandardScaler() # Can change this to choose different scaler
         self.split = split
 
-        self.X, self.y = self.featurize(raw_data, text_only=text_only, include_tfidf=include_tfidf)
+        self.X, self.y = self.featurize(raw_data, text_only=text_only, include_tfidf=include_tfidf, balanced=balanced)
 
 
     # Code from https://mccormickml.com/2019/05/14/BERT-word-embeddings-tutorial/
@@ -52,7 +52,11 @@ class Data:
         return sentence_embedding.tolist()
 
     # Change this function to change how data is featurized
-    def featurize(self, df, text_only=False, include_tfidf=False):
+    def featurize(self, df, text_only=False, include_tfidf=False, balanced=False):
+        if balanced:
+            X = df.drop(columns=['label']).values
+            y = df['label'].values
+            return X, y
         if 'processed_text' not in df.columns:
             df['processed_text'] = df['text']
         df = df[~df['processed_text'].isna()].reset_index()
@@ -120,12 +124,12 @@ def load(datadir, cachedir=None, override_cache=False,
     else:
         if balanced:
             train = pd.read_csv(glob(os.path.join(datadir, 'balanced', '*train*.csv'))[0])
-            dev = pd.read_csv(glob(os.path.join(datadir, 'balanced', '*val*.csv'))[0])
+            dev = pd.read_csv(glob(os.path.join(datadir, 'balanced', '*dev*.csv'))[0])
             test = pd.read_csv(glob(os.path.join(datadir, 'balanced', '*test*.csv'))[0])
 
-            train = Data(train, "train", text_only=text_only, include_tfidf=include_tfidf)
-            dev = Data(dev, "dev", text_only=text_only, include_tfidf=include_tfidf)
-            test = Data(test, "test", text_only=text_only, include_tfidf=include_tfidf)
+            train = Data(train, "train", text_only=text_only, include_tfidf=include_tfidf, balanced=balanced)
+            dev = Data(dev, "dev", text_only=text_only, include_tfidf=include_tfidf, balanced=balanced)
+            test = Data(test, "test", text_only=text_only, include_tfidf=include_tfidf, balanced=balanced)
 
         else:
             all_data = pd.read_csv(os.path.join(datadir, 'all_data_preprocessed.tsv'), sep='\t')
