@@ -1,10 +1,6 @@
 """ Main function, which trains our model and makes predictions with it. """
-import csv
 import argparse as ap
 import logging
-
-import numpy as np
-import torch
 from sklearn.metrics import classification_report
 from data import load
 from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote, SVM, Bert
@@ -15,6 +11,7 @@ import json
 
 def get_args():
     """ Define our command line arguments. """
+
     p = ap.ArgumentParser()
 
     # Mode to run the model in.
@@ -31,7 +28,7 @@ def get_args():
     p.add_argument('--include-tfidf', default=False, action='store_true')
     p.add_argument('--override-cache', default=False, action='store_true')
 
-    # hyperparameters
+    # hyper parameters
     p.add_argument("--batch-size", type=int, default=36)
 
     # simple-ff hparams
@@ -48,14 +45,19 @@ def get_args():
 
 
 def train(args):
+    """
+    This function trains the models
+    :param args: the command line arguments defining the desired actions
+    """
+
     # load data
-    train, dev, _ = load(args.data_dir, cachedir=args.cachedir, 
-                        override_cache=args.override_cache, 
-                        text_only=(args.model.lower() in ["bi-lstm", "bert"]),
-                        include_tfidf=args.include_tfidf,
-                        balanced=args.balanced)
-    train_data, train_labels = train.X, train.y
-    dev_data, dev_labels = dev.X, dev.y
+    train_data_all, dev_data_all, _ = load(args.data_dir, cachedir=args.cachedir,
+                                           override_cache=args.override_cache,
+                                           text_only=(args.model.lower() in ["bi-lstm", "bert"]),
+                                           include_tfidf=args.include_tfidf,
+                                           balanced=args.balanced)
+    train_data, train_labels = train_data_all.X, train_data_all.y
+    dev_data, dev_labels = dev_data_all.X, dev_data_all.y
 
     # Build model
     apx = get_appendix(args.include_tfidf, args.balanced)
@@ -93,12 +95,16 @@ def train(args):
 
 
 def test(args):
-    _, _, test = load(args.data_dir, cachedir=args.cachedir, 
-                    override_cache=args.override_cache, 
-                    text_only=(args.model.lower() in ["bi-lstm", "bert"]),
-                    include_tfidf=args.include_tfidf,
-                    balanced=args.balanced)
-    test_data, test_labels = test.X, test.y
+    """
+    This function tests our models
+    :param args: the command line arguments with the desired actions
+    """
+    _, _, test_data_all = load(args.data_dir, cachedir=args.cachedir,
+                               override_cache=args.override_cache,
+                               text_only=(args.model.lower() in ["bi-lstm", "bert"]),
+                                include_tfidf=args.include_tfidf,
+                                balanced=args.balanced)
+    test_data, test_labels = test_data_all.X, test_data_all.y
 
     apx = get_appendix(args.include_tfidf, args.balanced)
     if args.model.lower() == "simple-ff":
