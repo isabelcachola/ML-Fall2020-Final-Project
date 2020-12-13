@@ -3,7 +3,7 @@ import argparse as ap
 import logging
 from sklearn.metrics import classification_report
 from data import load
-from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote, SVM
+from models import FeedForward, BiLSTM, LogisticRegression, MajorityVote, SVM, Bert
 from utils import train_pytorch, test_pytorch, get_appendix
 from pprint import pprint
 import json
@@ -36,8 +36,10 @@ def get_args():
     p.add_argument("--train-steps", type=int, default=500)
     p.add_argument("--ff-hunits", type=int, default=128)
 
-    # bi-lstm hparams
+    # bi-lstm/bert hparams
     p.add_argument("--num-epochs", type=int, default=5)
+    p.add_argument("--max-seq-len", type=int, default=25)
+    
 
     return p.parse_args()
 
@@ -51,8 +53,9 @@ def train(args):
     # load data
     train_data_all, dev_data_all, _ = load(args.data_dir, cachedir=args.cachedir,
                                            override_cache=args.override_cache,
-                                           text_only=(args.model.lower() == "bi-lstm"),
-                                           include_tfidf=args.include_tfidf)
+                                           text_only=(args.model.lower() in ["bi-lstm", "bert"]),
+                                           include_tfidf=args.include_tfidf,
+                                           balanced=args.balanced)
     train_data, train_labels = train_data_all.X, train_data_all.y
     dev_data, dev_labels = dev_data_all.X, dev_data_all.y
 
@@ -65,7 +68,9 @@ def train(args):
                       dev_data, dev_labels,
                       save_model_path=f"models/simple-ff{apx}.torch")
     elif args.model.lower() == "bi-lstm":
-        model = BiLSTM(epochs=args.num_epochs, batch_size=args.batch_size)
+        model = BiLSTM(epochs=args.num_epochs, 
+                        batch_size=args.batch_size,
+                        max_seq_len=args.max_seq_len)
         model.train(train_data, train_labels, dev_data, dev_labels)
     elif args.model.lower() == "logreg":
         model = LogisticRegression()
@@ -74,6 +79,14 @@ def train(args):
     elif args.model.lower() == "majority-vote":
         model = MajorityVote()
         model.train(train_labels, dev_labels)
+    elif args.model.lower() == "bert":
+        model = Bert(epochs=args.num_epochs, 
+                    batch_size=args.batch_size, 
+                    max_seq_len=args.max_seq_len,
+                    learning_rate=args.learning_rate
+                    )
+        model.train(train_data, train_labels, dev_data, dev_labels, 
+                    save_model_path=f"models/bert.pkl")
     elif args.model.lower() == "svm":
         model = SVM()
         model.train(train_data, train_labels, save_model_path=f"models/svm{apx}.sav")
@@ -88,8 +101,9 @@ def test(args):
     """
     _, _, test_data_all = load(args.data_dir, cachedir=args.cachedir,
                                override_cache=args.override_cache,
-                               text_only=(args.model.lower() == "bi-lstm"),
-                               include_tfidf=args.include_tfidf)
+                               text_only=(args.model.lower() in ["bi-lstm", "bert"]),
+                                include_tfidf=args.include_tfidf,
+                                balanced=args.balanced)
     test_data, test_labels = test_data_all.X, test_data_all.y
 
     apx = get_appendix(args.include_tfidf, args.balanced)
@@ -109,6 +123,10 @@ def test(args):
     elif args.model.lower() == "majority-vote":
         model = MajorityVote(load_model_path="models/majority-class.txt")
         preds = model.test(test_labels)
+    elif args.model.lower() == "bert":
+        model = Bert(load_model_path="models/bert.pkl")
+        preds = model.test(test_data, test_labels, 
+                    save_predictions_path="preds/bert-preds.txt")
     elif args.model.lower() == "svm":
         model = SVM(load_model_path=f"models/svm{apx}.sav")
         preds = model.test(test_data, save_predictions_path=f"preds/svm-preds{apx}.txt")

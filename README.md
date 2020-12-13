@@ -24,7 +24,7 @@ The files `data/{train/dev/test}-ids.txt` contain tweet ids with for each split 
 
 ## Preprocessed Data
 
-Download the `all_data_preprocess.tsv` file from the drive. It's a tab separated file. 
+Download the `all_data_preprocess.tsv` file from the drive. It's a tab separated file. Save it to `data/`
 
 **You still have to featurize this data, depending on your model choice.**
 
@@ -60,10 +60,14 @@ hashtag_tfid_avg: the average tfids of the hashtags of the tweet
 hashtag_tfid_std: the standart deviation of the tfids of the hashtags of the tweet
 ```
 
+## Balanced Data
+Download the file `data_upsampled_ncf.zip` from the drive. Unzip it in `data/balanced/`. To train/predict on balanced data, use the flag `--balanced`. You can only use this data on non-sequential models.
+
+
 # Training
 To train a model, run the following command:
 ```
-$ python main.py train {logreg|bi-lstm|simple-ff|svm} {optional parameters}
+$ python main.py train {logreg|bi-lstm|simple-ff|svm|bert} {optional parameters}
 ```
 The script will cache the featurized data in `data/`. If you are making changes to the featurization, use the flag `--override-cache`.
 
@@ -77,7 +81,7 @@ use the flag --balance
 To test a model, run the following command:
 To train a model, run the following command:
 ```
-$ python main.py predict {logreg|bi-lstm|simple-ff|svm} {optional parameters}
+$ python main.py predict {logreg|bi-lstm|simple-ff|svm|bert} {optional parameters}
 ```
 
 The script saves predictions to `preds/` and testing metrics to `scores/`
