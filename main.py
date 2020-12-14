@@ -62,7 +62,7 @@ def train(args):
     # Build model
     apx = get_appendix(args.include_tfidf, args.balanced)
     if args.model.lower() == "simple-ff":
-        model = FeedForward(args.ff_hunits, train.X.shape[1])
+        model = FeedForward(args.ff_hunits, train_data.shape[1])
         train_pytorch(args, model,
                       train_data, train_labels,
                       dev_data, dev_labels,
